@@ -1,0 +1,32 @@
+#################################################
+# MAKEFILE FOR: capacity_test_q                 #
+#                                               #
+# PROJECT NAME: Hopfield Network simulation     #
+#               (prototype)                     #
+#                                               #
+# SUPERVISOR: Mark van Rossum                   #
+#                                               #
+# AUTHOR:  Lorenzo Mella                        #
+# VERSION: 17/07/2016                           #
+#                                               #
+#################################################
+
+
+CFLAGS = -ansi -pedantic -Wall -O2
+OFILES = capacity_test_q.o hn_data_io.o hn_network.o hn_modes_q.o              \
+         hn_test_pattern_q.o
+
+capacity_test_q: $(OFILES)
+	$(CC) -o $@ $(CFLAGS) $(OFILES)
+
+capacity_test_q.o: capacity_test_q.c hn_types.h hn_macro_utils.h \
+  hn_data_io.h hn_modes_q.h hn_network.h hn_test_pattern_q.h debug_log.h
+hn_network.o: hn_network.c hn_types.h hn_macro_utils.h hn_network.h \
+  debug_log.h
+hn_modes_q.o: hn_modes_q.c hn_types.h hn_macro_utils.h hn_modes_q.h \
+  debug_log.h
+hn_test_pattern_q.o: hn_test_pattern_q.c hn_types.h hn_macro_utils.h \
+  hn_network.h debug_log.h hn_test_pattern_q.h
+
+clean:
+	rm -f $(OFILES)

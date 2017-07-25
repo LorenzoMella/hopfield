@@ -1,0 +1,31 @@
+#################################################
+# MAKEFILE FOR: time_complexity                 #
+#                                               #
+# PROJECT NAME: Hopfield Network simulation     #
+#               (prototype)                     #
+#                                               #
+# SUPERVISOR: Mark van Rossum                   #
+#                                               #
+# AUTHOR:  Lorenzo Mella                        #
+# VERSION: 23/07/2016                           #
+#                                               #
+#################################################
+
+
+CFLAGS = -ansi -pedantic -Wall -O0
+PROF = # Empty, but it can be defined as -pg on the command line if required
+LINKMATH = 
+OFILES = time_complexity.o hn_data_io.o hn_network.o hn_modes.o
+
+time_complexity: $(OFILES)
+	$(CC) -o $@ $(CFLAGS) $(LINKMATH) $(PROF) $(OFILES)
+
+time_complexity.o: time_complexity.c hn_types.h hn_macro_utils.h               \
+                 hn_data_io.h hn_modes.h hn_network.h debug_log.h
+hn_data_io.o: hn_data_io.c hn_types.h hn_data_io.h debug_log.h
+hn_modes.o: hn_modes.c hn_types.h hn_macro_utils.h hn_modes.h debug_log.h
+hn_network.o: hn_network.c hn_types.h hn_macro_utils.h hn_network.h            \
+              debug_log.h
+
+clean:
+	rm -f $(OFILES)
