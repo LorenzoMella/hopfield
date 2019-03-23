@@ -8,22 +8,24 @@
  * SUPERVISOR: Mark van Rossum                       *
  *                                                   *
  * AUTHOR:  Lorenzo Mella                            *
- * VERSION: 25/07/2017                               *
  *                                                   *
  *****************************************************/
 
-
-#include <stdlib.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
-#include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "hn_types.h"
-#include "hn_parser.h"
-#include "debug_log.h"
 
-/* strcmp returns 0 iff the argument strings are equal: counterintuitive! */
-#define STRINGS_ARE_EQUAL !strcmp
+#include "hn_parser.h"
+#include "hn_types.h"
+#include "hn_macro_utils.h"
+#include "../debug_log/debug_log.h"
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 
 /*
@@ -32,8 +34,8 @@
  * 2 - if it expects an argument, it simply reads what follows, even if it
  *     starts with - and might therefore be another option token
  * 3 - the allowable codes must be passed to getopt as a single string; see
- *     HN_OPTION_CODES below. If a code is followed by ':', it means that the
- *     corresponding option expects also an argument.
+ *     OptionCodes below. If a code is followed by ':', it means that the
+ *     corresponding option expects an argument.
  */
 
 /*
@@ -46,36 +48,42 @@
  * -m   string representing the update mode
  * -t   the threshold of the activation function
  */
-#define HN_OPTION_CODES "N:M:w:p:s:m:t:"
+#define OptionCodes "N:M:w:p:s:m:t:"
+
 
 /* You can enter arguments in any order, but if an invalid option code is met
  * subsequent correct ones are ignored */
-parse_error_code hn_retrieve_options(hn_options *opts, int argc, char **argv)
+hn_options *hn_retrieve_options(hn_options *opts, int argc, char **argv)
 {
-    char code;
-    
     /* Set defaults */
     set_default_options(opts);
-    
+    if (errno) {
+	perror("set_valid_options failure");
+	errno = 0;
+	return NULL;
+    }
     /* Iterate over retrievable options until none is left */
-    while ((code = getopt(argc, argv, HN_OPTION_CODES)) != -1) {
-        debug_log("retrieved code = '%c'; argument index = %d; "
+    char code;
+    while ((code = getopt(argc, argv, OptionCodes)) != -1) {
+        Logger("retrieved code = '%c'; argument index = %d; "
                   "argument = \"%s\"\n", code, optind, optarg);
         /* Check for invalid options */
         if (code == '?') {
-            fprintf(stderr, "%s: Invalid option: '%c'\n", __FILE__, optopt);
-            return PARSE_INVALID_OPT;
-        /* If argument is valid, update opts pointer */
-        } else if (is_valid_option_argument(code, optarg)) {
-            debug_log("current optarg = \"%s\"\n", optarg);
-            set_option_argument(opts, code, optarg);
-        /* If argument is invalid */
+            fprintf(stderr, "%s: Invalid option label: '-%c'\n",
+		    __FILE__, optopt);
+            return NULL;
+        /* If argument is valid, update opts pointer
+	 * and check for correctness */
         } else {
-            fprintf(stderr, "%s: Invalid argument: \"%s\"\n", __FILE__, optarg);
-            return PARSE_INVALID_ARG;
+            Logger("current optarg = \"%s\"\n", optarg);
+            set_option_argument(opts, code, optarg);
         }
     }
-    return PARSE_SUCCESS;
+    if (!valid_paths(opts)) {
+	errno = 0;
+	return NULL;
+    }
+    return opts;
 }
 
 
@@ -83,43 +91,35 @@ void set_default_options(hn_options *opts)
 {
     opts->max_units = 500;
     opts->max_patterns = 10;
-    opts->w_filename = "weights.bin";
-    opts->p_filename = "patterns.bin";
-    opts->s_filename = "results.bin";
-    opts->mode = SEQUENTIAL;
+    opts->w_filename = strdup("weights.bin");
+    opts->p_filename = strdup("patterns.bin");
+    opts->s_filename = strdup("results.bin");
+    opts->mode = strdup("Sequential");
     opts->threshold = 0.;
 }
 
 
-int is_valid_option_argument(char option_code, char *token)
+size_t nonnegative_size_from_string(char *token)
 {
-    switch (option_code) {
-        case 'w':
-        case 'p':
-        case 's':
-            if(!is_valid_path(token)) {
-                printf("Option code '%c': invalid path %s\n",
-                       option_code, token);
-                return 0;
-            }
-            break;
-        case 'm':
-            /* If the two available possibilities don't match */
-            if (!STRINGS_ARE_EQUAL(token, "SEQUENTIAL") &&
-                !STRINGS_ARE_EQUAL(token, "RANDOM")) {
-                return 0;
-            }
-            break;
-        case 'N':
-        case 'M':
-        case 't':
-            /* No easy way to check these: for instance, strtod, strtol, etc.
-             * return 0 if the token doesn't represent a number */
-            debug_log("Argument is %s\n", token);
-            break;
+    long lsize = strtol(token, NULL, 10);
+    if (lsize < 0) {
+	fprintf(stderr, "%s: Negative number as a size.\n", __func__);
+	lsize = -lsize;
     }
-    /* Syntax text passed */
-    return 1;
+    Logger("lsize = %ld\n", lsize);
+    return (size_t)lsize;
+}
+
+
+double nonnegative_double_from_string(char *token)
+{
+    double dvalue = strtod(token, NULL);
+    if (dvalue < 0.) {
+	fprintf(stderr, "%s: Negative threshold value\n", __func__);
+	dvalue = -dvalue;
+    }
+    Logger("dvalue = %f\n", dvalue);
+    return dvalue;
 }
 
 
@@ -127,125 +127,70 @@ void set_option_argument(hn_options *opts, char code, char *token)
 {
     switch (code) {
         /* codes 'N and 'M': if string is invalid, strtol returns 0L */
-        case 'N':
-            debug_log("max_units token = \"%s\"\n", token);
-            opts->max_units = (size_t)strtol(token, NULL, 10);
-            break;
-        case 'M':
-            debug_log("max_patterns token = \"%s\"\n", token);
-            opts->max_patterns = (size_t)strtol(token, NULL, 10);
-            break;
-        case 'w':
-            opts->w_filename = make_full_path(token);
-            debug_log("Path = \"%s\"\n", opts->w_filename);
-            break;
-        case 'p':
-            opts->p_filename = make_full_path(token);
-            debug_log("Path = \"%s\"\n", opts->p_filename);
-            break;
-        case 's':
-            opts->s_filename = make_full_path(token);
-            debug_log("Path = \"%s\"\n", opts->s_filename);
-            break;
-        case 'm':
-            if (STRINGS_ARE_EQUAL(token, "SEQUENTIAL")) {
-                opts->mode = SEQUENTIAL;
-            } else if (STRINGS_ARE_EQUAL(token, "RANDOM")) {
-                opts->mode = RANDOM;
-            }
-            break;
-        case 't':
-            /* If string is invalid, strtod returns 0.0 */
-            debug_log("threshold token = \"%s\"\n", token);
-            opts->threshold = strtod(token, NULL);
-            break;
-        }
+    case 'N':
+	Logger("max_units token = \"%s\"\n", token);
+	opts->max_units = nonnegative_size_from_string(token);
+	break;
+    case 'M':
+	Logger("max_patterns token = \"%s\"\n", token);
+	opts->max_patterns = nonnegative_size_from_string(token);
+	break;
+    case 'w':
+	free(opts->w_filename);
+	opts->w_filename = malloc(PATH_MAX * sizeof(char));
+	KillUnless(opts->w_filename != NULL);
+	realpath(token, opts->w_filename);
+	Logger("Path = \"%s\"\n", opts->w_filename);
+	break;
+    case 'p':
+	free(opts->p_filename);
+	opts->p_filename =  malloc(PATH_MAX * sizeof(char));
+	KillUnless(opts->p_filename != NULL);
+	realpath(token, opts->p_filename);
+	Logger("Path = \"%s\"\n", opts->p_filename);
+	break;
+    case 's':
+	free(opts->s_filename);
+	opts->s_filename =  malloc(PATH_MAX * sizeof(char));
+	KillUnless(opts->s_filename != NULL);
+	realpath(token, opts->s_filename);
+	Logger("Path = \"%s\"\n", opts->s_filename);
+	break;
+    case 'm':
+	opts->mode = token;
+	break;
+    case 't':
+	Logger("threshold token = \"%s\"\n", token);
+	opts->threshold = nonnegative_double_from_string(token);
+	break;
+    }
 }
 
 
-/* 
- * Token is already without whitespace. Hence we must verify that,
- * after it's broken with strtok as a collection of tokens (all without
- * whitespace), they are either: valid names (in particular not "", that is,
- * no // in the original string) or, regarding the first, must be exactly
- * one of "~", "." or "..".
- */
-int is_valid_path(char *path)
+int valid_paths(hn_options *opts)
 {
-    int is_valid_path = 1;
-    char *path_copy = malloc((strlen(path) + 1) * sizeof (char));
-    char *token = malloc((strlen(path) + 1) * sizeof (char));
-    /* strtok disrupts the original string: better work with a copy */
-    strcpy(path_copy, path);
-
-    token = strtok(path_copy, "/");
-    /* Check that the first token is either a valid folder/filename
-     * or one of ".", ".." or "~" */
-    
-    debug_log("Analysed token = %s\n", token);
-    
-    if (!is_portable_filename(token) && !is_path_abbreviation(token)) {
-        is_valid_path = 0;
+    int all_valid = 1;
+    if (access(opts->w_filename, O_RDONLY) < 0) {
+	fprintf(stderr, "%s: %s\n", opts->w_filename, strerror(errno));
+	all_valid = 0;
     }
-    /* Check that the other tokens are valid folder/filenames */
-    while ((token = strtok(NULL, "/")) != NULL) {
-        
-        debug_log("Analysed token = %s\n", token);
-        
-        if (!is_portable_filename(token)) {
-            is_valid_path = 0;
-        }
+    if (access(opts->p_filename, O_RDONLY) < 0) {
+	fprintf(stderr, "%s: %s\n", opts->p_filename, strerror(errno));
+	all_valid = 0;
     }
-    
-    free(token);
-    free(path_copy);
-    return is_valid_path;
+    if (access(opts->s_filename, W_OK) < 0 && errno != ENOENT) {
+	fprintf(stderr, "%s: %s\n", opts->s_filename, strerror(errno));
+	all_valid = 0;
+    }
+    return all_valid;
 }
 
 
-int is_portable_filename(char *name)
+void hn_free_options(hn_options *opts)
 {
-    /* ctype.h functions take unsigned chars */
-    unsigned char c;
-    /* Check for NULL pointers or empty strings */
-    if (name == NULL || *name == '\0') {
-        return 0;
-    }
-    
-    /* Search for non-allowable characters until '\0'*/
-    while ((c = *(name++)) != '\0') {
-        debug_log("Checking character '%c'...\n", c);
-        if (isspace(c) || (!isalnum(c) && c != '_' && c != '-' && c != '.')) {
-            return 0;
-        }
-        
-    }
-    debug_log("All characters ok.\n");
-    return 1;
+    free(opts->mode);
+    free(opts->w_filename);
+    free(opts->p_filename);
+    free(opts->s_filename);
+    free(opts);
 }
-
-
-int is_path_abbreviation(char *str)
-{
-    return STRINGS_ARE_EQUAL(str, ".") || STRINGS_ARE_EQUAL(str, "..") ||
-           STRINGS_ARE_EQUAL(str, "~");
-}
-
-
-static char *make_full_path(char *path)
-{
-    char *full_path = NULL;
-    
-    if (path[0] != '~') {
-        full_path = path;
-    } else {
-        asprintf(&full_path, "%s%s", getenv("HOME"), path+1)
-        if (full_path == NULL) {
-            printf("%s, line %d: memory allocation error\n",
-                   __FILE__, __LINE__);
-            exit(EXIT_FAILURE);
-        }
-    }
-    return full_path;
-}
-

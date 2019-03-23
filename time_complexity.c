@@ -29,7 +29,7 @@
 /* #define DEBUG_LOG */
 #include "debug_log.h"
 
-#define NEAREST_INTEGER(a)  (long)floor((a) + 0.5)
+#define NearestInteger(a)  (long)floor((a) + 0.5)
 
 /* Application defaults are set here */
 #define MAX_TRIALS 40
@@ -42,6 +42,7 @@
 #define SAVE_FOLDER "time_complexity_plot"
 
 enum self_coupling {KEEP_SELF_COUPLING=0, REMOVE_SELF_COUPLING=1};
+
 
 /* Little command-line parser */
 void command_line_parser(int argc, char **argv, int *max_trials,
@@ -130,7 +131,7 @@ int main(int argc, char **argv)
     dplot_points[0] = (double)min_plot_value;
     for (i = 1; i < max_plot_points; ++i) {
         /* next plot point = previous * ratio (rounded to nearest integer) */
-        plot_points[i] = (size_t)NEAREST_INTEGER(plot_points[i-1] * ratio);
+        plot_points[i] = (size_t)NearestInteger(plot_points[i-1] * ratio);
         debug_log("Nearest integer to %f is %lu\n", plot_points[i-1] * ratio,
                   plot_points[i]);
         dplot_points[i] = (double)plot_points[i];
@@ -142,7 +143,7 @@ int main(int argc, char **argv)
          * be done here because max_units and max_patterns change with i) */
         size_t max_units = plot_points[i];
         size_t max_patterns =
-            (size_t)NEAREST_INTEGER(pattern_unit_ratio * max_units);
+            (size_t)NearestInteger(pattern_unit_ratio * max_units);
         debug_log("max_patterns = %lu\n", max_patterns);
         assert(max_patterns > 0 && max_patterns < max_units);
         

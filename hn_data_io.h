@@ -16,19 +16,33 @@
  *                                                   *
  *****************************************************/
 
-#ifndef HN_DATA_ENC_H
-#define HN_DATA_ENC_H
 
-typedef enum io_error_code {
-    IO_SUCCESS,
-    IO_FAILURE
-} io_error_code;
+#ifndef HN_DATA_IO_H
+#define HN_DATA_IO_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "hn_types.h"
+
+
+/* The functions in this module don't terminate execution on their own.
+ * They return control to the user. */
+enum io_error_code {IOSuccess, IOFailure};
+
+
+#define ReturnIOFailureIf(condition)					\
+    do {								\
+	if ((condition)) {						\
+	    PrintErrorDetails((condition));				\
+	    return IOFailure;						\
+	}								\
+    } while(0)
+
 
 /*
  * The following functions require already allocated arrays as their first
  * argument and return a flag signalling correct execution or errors.
  */
-
 
 /**
  * Reads the weights from a data-file; the user is responsible for providing
@@ -38,10 +52,10 @@ typedef enum io_error_code {
  * @param w_filename:   name of the datafile where the weights are stored
  * @param max_units:    the size of the network
  *
- * @return:             outcome (type io_error_code)
+ * @return:             outcome (type enum io_error_code)
  */
-io_error_code hn_read_weights(double **weights, char *w_filename,
-                              size_t max_units);
+enum io_error_code hn_read_weights(double **weights, char *w_filename,
+				   size_t max_units);
 
 
 /**
@@ -53,35 +67,36 @@ io_error_code hn_read_weights(double **weights, char *w_filename,
  * @param p_filename:   name of the datafile where the patterns are stored
  * @param max_units:    the size of the network
  *
- * @return:             outcome (type io_error_code)
+ * @return:             outcome (type enum io_error_code)
  */
-io_error_code hn_read_next_pattern(spike_T *pattern, char *p_filename,
-                                   size_t max_units);
+enum io_error_code hn_read_next_pattern(spike_T *pattern, char *p_filename,
+					size_t max_units);
 
 
 /**
- * Saves any list of doubles (e.g., avg overlap counts, timings, etc.)
+ * Saves any list of doubles (e.g., average overlap counts, timings, etc.)
  *
  * @param output:           the array to be saved
  * @param s_filename:       name of the savefile (overwrites if it exists)
  * @param output_length:    the length of the array
  *
- * @return:                 outcome (type io_error_code)
+ * @return:                 outcome (type enum io_error_code)
  */
-io_error_code hn_save(double *output, char *s_filename, size_t output_length);
+enum io_error_code hn_save(double *output, char *s_filename,
+			   size_t output_length);
 
 
 /**
- * Saves a weight matrix in a newly created file.
+ * Saves a weight matrix to a newly created file.
  *
  * @param weights:      the max_units * max_units weight matrix
  * @param w_filename:   name of the file to create and save to
  * @param max_units:    the size of the network
  *
- * @return:             outcome (type io_error_code)
+ * @return:             outcome (type enum io_error_code)
  */
-io_error_code hn_save_weights(double **weights, char *w_filename,
-                              size_t max_units);
+enum io_error_code hn_save_weights(double **weights, char *w_filename,
+				   size_t max_units);
 
 
 /**
@@ -91,10 +106,10 @@ io_error_code hn_save_weights(double **weights, char *w_filename,
  * @param p_filename:   the name of the file to save to
  * @param max_units:    the length of the pattern
  *
- * @return:             outcome (type io_error_code)
+ * @return:             outcome (type enum io_error_code)
  */
-io_error_code hn_save_next_pattern(spike_T *pattern, char *p_filename,
-                                   size_t max_units);
+enum io_error_code hn_save_next_pattern(spike_T *pattern, char *p_filename,
+					size_t max_units);
 
 
 /**
@@ -110,4 +125,4 @@ void hn_fill_rand_pattern(spike_T *pattern, double coding_level,
                           size_t max_units);
 
 
-#endif
+#endif /* HN_DATA_IO_H */

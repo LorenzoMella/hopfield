@@ -15,15 +15,15 @@
  *                                                   *
  *****************************************************/
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
+
 #include "hn_types.h"
-#include "hn_macro_utils.h"
 #include "hn_data_io.h"
+#include "hn_macro_utils.h"
 #include "hn_modes.h"
 #include "hn_network.h"
-/*#define DEBUG_LOG*/
 #include "debug_log.h"
 
 
@@ -36,6 +36,7 @@
 
 #define SUPPRESS_SELF_COUPLING 1
 
+
 /* Little command-line parser */
 void command_line_parser(int argc, char **argv, int *max_trials,
                          size_t *max_units, size_t *max_patterns,
@@ -44,10 +45,6 @@ void command_line_parser(int argc, char **argv, int *max_trials,
 
 int main(int argc, char **argv)
 {
-    /* Indices */
-    size_t i;
-    int trial;
-    
     /* Command-line simulation parameters */
     int max_trials;         /* Number of MC simulation trials */
     size_t max_units;       /* Number of neurons */
@@ -62,8 +59,6 @@ int main(int argc, char **argv)
     /* Data structure pointers */
     spike_T **patterns = NULL;
     double **weights = NULL;
-    double *avg_overlaps = NULL;        /* Estimated mean */
-    double *avg_sq_overlaps = NULL;     /* Estimated second moment */
     
     /* Strings to hold customised savefile names */
     char s_filename[100];
@@ -92,27 +87,24 @@ int main(int argc, char **argv)
      * an experiment on ONE pattern (among them, at random), then add
      * the result to the following. This is repeated max_trials times
      */
-    avg_overlaps = malloc(max_patterns * sizeof (double));
-    exit_on_exception(avg_overlaps != NULL);
+    /* Estimated mean */
+    double *avg_overlaps = calloc(max_patterns, sizeof (double));
+    KillUnless(avg_overlaps != NULL);
     
     /*
      * The following array will instead accumulate (and average) the squared
      * overlaps. The result is used to compute the sample variance as
      *     var[i] = avg_sq_overlaps[i] - avg_overlaps[i]*avg_overlaps[i]
      */
-    avg_sq_overlaps = malloc(max_patterns * sizeof (double));
-    exit_on_exception(avg_sq_overlaps != NULL);
-    
-    for (i = 0; i < max_patterns; ++i) {
-        avg_overlaps[i] = 0.;
-        avg_sq_overlaps[i] = 0.;
-    }
-    
+    /* Estimated second moment */
+    double *avg_sq_overlaps = calloc(max_patterns, sizeof (double));
+    KillUnless(avg_sq_overlaps != NULL);
+        
     /* Main loop: identical experiments with randomised data
      * for Monte Carlo estimation of the retrieval probabilities */
     
     
-    for (trial = 0; trial < max_trials; ++trial) {
+    for (size_t trial = 0; trial < max_trials; ++trial) {
         /* Timing each trial... */
         clock_start = clock();
         
@@ -121,60 +113,59 @@ int main(int argc, char **argv)
         /* Allocate the space for a sequence of patterns and fill
          * patterns with random sequences at the specified coding level */
         /* THIS DOESN'T HOWEVER CHECK FOR IDENTICAL MEMORIES!! */
-        debug_log("Allocating memory for patterns...\n");
-        hn_matrix_alloc(patterns, max_patterns, max_units);
-        debug_log("... done!\n");
-        for (i = 0; i < max_patterns; ++i) {
+        Logger("Allocating memory for patterns...\n");
+        MatrixAlloc(patterns, max_patterns, max_units);
+        Logger("... done!\n");
+        for (size_t i = 0; i < max_patterns; ++i) {
             hn_fill_rand_pattern(patterns[i], coding_level, max_units);
         }
         
         /* Create weight matrix and set entries to 0.0 */
-        debug_log("Creating a zero matrix for weights...\n");
-        hn_matrix_zeros(weights, max_units, max_units);
-        debug_log("... done!\n");
+        Logger("Creating a zero matrix for weights...\n");
+        MatrixZeros(weights, max_units, max_units);
+        Logger("... done!\n");
         
         /* Secondary loop: overlap frequency vs number of stored memories */
-        for (i = 0; i < max_patterns; ++i) {
+        for (size_t i = 0; i < max_patterns; ++i) {
             size_t overlaps;
             hn_network net;
-            hn_mode_utils utils = hn_utils_with_mode(RANDOM);
+            hn_mode_utils utils = hn_utils_with_mode("Random");
             
             /* Select a pattern among the first i+1 to test at random
              * and make a copy to compare later */
-            spike_T *rand_pattern = patterns[RANDI(i+1)];
+            spike_T *rand_pattern = patterns[RandI(i + 1)];
             spike_T *initial_state = hn_pattern_copy(rand_pattern, max_units);
             
             /* Update the weight matrix, learning the i-th pattern
              * incrementally (the 1 means diagonal is suppressed) */
-            debug_log("Updating weights, learning pattern %lu...\n", i);
+            Logger("Updating weights, learning pattern %lu...\n", i);
             hn_hebb_weights_increment_with_pattern(weights, patterns[i],
-                                            max_units, SUPPRESS_SELF_COUPLING);
-            debug_log("... done!\n");
+						   max_units, SUPPRESS_SELF_COUPLING);
+            Logger("... done!\n");
             
             /* Build network and perform simulation on rand_pattern */
             net = hn_network_from_params(weights, threshold, NULL);
-            debug_log("Testing rand_pattern...\n");
+            Logger("Testing rand_pattern...\n");
             hn_test_pattern(net, rand_pattern, max_units, max_units, utils);
-            debug_log("... done!\n");
+            Logger("... done!\n");
             /* (At this point rand_pattern has changed to a stable state) */
             
             /* Add the overlaps to the total counter (which will later
              * be turned into an average dividing by max_trials) */
-            overlaps = hn_overlap_frequency(initial_state,
-                                            rand_pattern, max_units);
+            overlaps = hn_overlap_frequency(initial_state, rand_pattern, max_units);
             
             avg_overlaps[i] += (double)overlaps;
             avg_sq_overlaps[i] += (double)overlaps*overlaps;
             
             free(initial_state);
         }
-        debug_log("Freeing patterns and weights...\n");
-        hn_matrix_free(weights);
-        hn_matrix_free(patterns);
-        debug_log("... done!\n");
+        Logger("Freeing patterns and weights...\n");
+        MatrixFree(weights);
+        MatrixFree(patterns);
+        Logger("... done!\n");
 
         clock_end = clock();
-        secs_diff = (double)(clock_end - clock_start)/CLOCKS_PER_SEC;
+        secs_diff = (double)(clock_end - clock_start) / CLOCKS_PER_SEC;
         total_elapsed_secs += secs_diff;
         
         printf("trial %d done. Elapsed CPU time: %.2f sec\n",
@@ -185,11 +176,11 @@ int main(int argc, char **argv)
            total_elapsed_secs);
     
     /* Average the accumulated results and compute the variances */
-    for (i = 0; i < max_patterns; ++i) {
+    for (size_t i = 0; i < max_patterns; ++i) {
         avg_overlaps[i] /= max_trials;
         avg_sq_overlaps[i] /= max_trials;
         /* After this, avg_sq_overlaps[i] is really the variance! */
-        avg_sq_overlaps[i] -= avg_overlaps[i]*avg_overlaps[i];
+        avg_sq_overlaps[i] -= avg_overlaps[i] * avg_overlaps[i];
     }
     
     /* Save average overlaps on a file */
@@ -202,13 +193,11 @@ int main(int argc, char **argv)
     
     
     printf("Saving average overlap counts on file... ");
-    exit_on_exception(IO_FAILURE != hn_save(avg_overlaps, s_filename,
-                                            max_patterns));
+    KillUnless(IOFailure != hn_save(avg_overlaps, s_filename, max_patterns));
     printf("done!\n\n");
     
     printf("Saving variance of overlap counts on file... ");
-    exit_on_exception(IO_FAILURE != hn_save(avg_sq_overlaps, s_filename_var,
-                                            max_patterns));
+    KillUnless(IOFailure != hn_save(avg_sq_overlaps, s_filename_var, max_patterns));
     printf("done!\n\n");
     
     exit(EXIT_SUCCESS);
@@ -229,6 +218,7 @@ void command_line_parser(int argc, char **argv, int *max_trials,
     /* Replace defaults in order if required (notice that failure
      * in strtod and strtol yields 0.0 and 0L values respectively) */
     switch (argc) {
+	/* FALLTHROUGH */
         default: /* Ignore args beyond argv[5] */
         case 6:
             *coding_level = strtod(argv[5], NULL);

@@ -14,18 +14,19 @@
  *****************************************************/
 
 
-/*#define DEBUG_LOG*/
+#define DEBUG_LOG
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "hn_types.h"   /* define DEBUG_LOG here to debug across everything */
-#include "hn_macro_utils.h"
-#include "hn_data_io.h"
-#include "hn_network.h"
-#include "hn_modes.h"
-#include "hn_parser.h"
-#include "debug_log.h"
+
+#include "../hn_types.h"   /* define DEBUG_LOG here to debug across everything */
+#include "../hn_macro_utils.h"
+#include "../hn_data_io.h"
+#include "../hn_network.h"
+#include "../hn_modes.h"
+#include "../hn_parser.h"
+#include "../../debug_log/debug_log.h"
 
 
 int main(int argc, char **argv)
@@ -53,8 +54,8 @@ int main(int argc, char **argv)
     #endif
     
     /* Loading options from command line arguments */
-    exit_on_exception(NULL != (opts = malloc(sizeof (hn_options))));
-    exit_on_exception(PARSE_SUCCESS == hn_retrieve_options(opts, argc, argv));
+    KillUnless((opts = malloc(sizeof (hn_options))) != NULL);
+    KillUnless(hn_retrieve_options(opts, argc, argv) == ParseSuccess);
     
     /* Initialise parameters (defaults: max_units = 500, max_patterns = 10) */
     max_units = opts->max_units;
@@ -63,17 +64,15 @@ int main(int argc, char **argv)
     
     /* Allocate and retrieve weight matrix from file (default: ./weights.bin) */
     printf("Reading weight matrix from file: %s\n", opts->w_filename);
-    hn_matrix_alloc(weights, max_units, max_units);
-    exit_on_exception(IO_FAILURE !=
-                      hn_read_weights(weights, opts->w_filename, max_units));
+    MatrixAlloc(weights, max_units, max_units);
+    KillUnless(hn_read_weights(weights, opts->w_filename, max_units) != IOFailure);
     printf("... done!\n");
     
     /* Initialise update mode (default: SEQUENTIAL) */
     utils = hn_utils_with_mode(opts->mode);
     
     /* Allocate array holding information to be saved */
-    exit_on_exception(NULL !=
-                      (overlaps = malloc(max_patterns * sizeof (double))));
+    KillUnless((overlaps = malloc(max_patterns * sizeof (double))) != NULL);
     
     /* Program description to the user */
     printf("\n- Hopfield Network simulation -\n\n"
@@ -84,17 +83,16 @@ int main(int argc, char **argv)
     /* Main loop: test all patterns in sequence */
     for (n = 0; n < max_patterns; ++n) {
         
-        debug_log("Pattern %lu: press key to continue\n", n);
+        Logger("Pattern %lu: press key to continue\n", n);
         #ifdef DEBUG_LOG
         getchar();
         #endif /* DEBUG_LOG */
         
         /* Load the next (n-th) initial pattern */
         printf("Reading pattern %lu...\n", n+1);
-        exit_on_exception(NULL !=
-                          (pattern = malloc(max_units * sizeof (spike_T))));
-        exit_on_exception(IO_FAILURE !=
-                    hn_read_next_pattern(pattern, opts->p_filename, max_units));
+        KillUnless((pattern = malloc(max_units * sizeof (spike_T))) != NULL);
+        KillUnless(hn_read_next_pattern(pattern, opts->p_filename, max_units) !=
+		   IOFailure);
         printf("... done!\n");
         
         /* Generate network structure with weights and the extracted pattern */
@@ -106,16 +104,14 @@ int main(int argc, char **argv)
         /* Determine the stable pattern, using the initial pattern
          * stored in net. A Pointer to net.activations is returned hence
          * we don't really need to use it */ 
-        num_updates = hn_test_pattern(net, NULL, max_units, warning_threshold,
-                                      utils);
+        num_updates = hn_test_pattern(net, NULL, max_units, warning_threshold, utils);
         
         /* Count the absolute frequency of matches between stable
          * and initial pattern */
         overlaps[n] = hn_overlap_frequency(net.activations, pcopy, max_units);
         
-        printf("Pattern %lu: overlaps = %g;"
-               " updates before convergence = %ld\n", n+1, overlaps[n],
-               num_updates);
+        printf("Pattern %lu: overlaps = %g; updates before convergence = %ld\n",
+	       n + 1, overlaps[n], num_updates);
         
         free(pcopy);
         pcopy = NULL;
@@ -124,13 +120,12 @@ int main(int argc, char **argv)
     }
     
     printf("Saving overlaps on file %s\n", opts->s_filename);
-    exit_on_exception(IO_FAILURE !=
-                      hn_save(overlaps, opts->s_filename, max_patterns));
+    KillUnless(hn_save(overlaps, opts->s_filename, max_patterns) != IOFailure);
     printf("... done!\n");
     
     /* Cleanup */
     free(overlaps);
-    hn_matrix_free(weights);
+    MatrixFree(weights);
     free(opts);
     
     exit(EXIT_SUCCESS);

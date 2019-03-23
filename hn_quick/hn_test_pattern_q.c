@@ -4,7 +4,7 @@
 #include "hn_macro_utils.h"
 #include "hn_network.h"
 #include "hn_modes_q.h"
-#include "debug_log.h"
+#include "../debug_log/debug_log.h"
 #include "hn_test_pattern_q.h"
 
 
@@ -16,11 +16,10 @@ static int hn_update(size_t update_index, hn_network net, size_t max_units);
 long hn_test_pattern_q(hn_network net, spike_T *pattern, size_t max_units,
                        size_t warning_threshold, hn_mode_utils_q utils)
 {
-    size_t index_to_update;
     long update_counter = 0;
     int unit_has_flipped;
     int *flipped_units = malloc(max_units * sizeof (int));
-    exit_on_exception(NULL != flipped_units);
+    KillUnless(flipped_units != NULL);
     
     /* At least one initial pattern must be present */
     assert(pattern != NULL || net.activations != NULL);
@@ -42,12 +41,12 @@ long hn_test_pattern_q(hn_network net, spike_T *pattern, size_t max_units,
     while (!utils.stability_check(flipped_units, max_units)) {
         /* Heuristic loose (but quicker) stability check performed inside */
         do {
-            index_to_update = utils.select_unit(max_units, 0);
-            debug_log("index_to_update: %lu\n", index_to_update);
+            size_t index_to_update = utils.select_unit(max_units, 0);
+            Logger("index_to_update: %lu\n", index_to_update);
             unit_has_flipped = hn_update(index_to_update, net, max_units);
             flipped_units[index_to_update] = unit_has_flipped;
             ++update_counter;
-            debug_log("flipped_units[index_to_update] = %d\n",
+            Logger("flipped_units[index_to_update] = %d\n",
                       flipped_units[index_to_update]);
         } while (!utils.stability_warning(unit_has_flipped, warning_threshold));
     }

@@ -83,7 +83,7 @@ long hn_test_pattern(hn_network net, spike_T *pattern, size_t max_units,
  * @param pattern:      the pattern to be copied
  * @param max_units:    the size of the network
  *
- * @return:             a pointer to the copy of the pattern (use stdlib free)
+ * @return:             a pointer to the copy of the pattern (freed by user)
  */
 spike_T *hn_pattern_copy(spike_T *pattern, size_t max_units);
 
@@ -96,11 +96,11 @@ spike_T *hn_pattern_copy(spike_T *pattern, size_t max_units);
  * @param patterns:             list of spike_T patterns
  * @param max_patterns:         the number of patterns
  * @param max_units:            the size of the network
- * @param remove_self_coupling  1 to suppress diagonal (else 0)
+ * @param remove_self_coupling  non-zero to suppress diagonal, 0 otherwise
  */
 void hn_hebb_weights_from_patterns(double **weights, spike_T **pattern,
-                                int max_patterns, int max_units,
-                                int remove_self_coupling);
+				   int max_patterns, int max_units,
+				   int remove_self_coupling);
 
 
 /**
@@ -136,8 +136,8 @@ void hn_hebb_weights_increment_with_pattern(double **weights,
  * @param remove_self_coupling  1 to suppress diagonal (else 0)
  */
 void hn_saturated_weights_from_patterns(double **weights, spike_T **patterns,
-                                    double saturation, int max_patterns,
-                                    int max_units, int remove_self_coupling);
+					double saturation, int max_patterns,
+					int max_units, int remove_self_coupling);
 
 
 /**
@@ -159,4 +159,4 @@ void hn_saturated_weights_increment_with_pattern(double **weights,
                                                  int remove_self_coupling);
 
 
-#endif
+#endif /* HN_NETWORK_H */

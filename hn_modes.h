@@ -24,6 +24,10 @@
 #include <stdlib.h>
 #include "hn_types.h"
 
+/* It is nice to have a dedicated name for the warning funcition in case
+ * of random updates as well, the code being the same */
+#define random_stability_warning    sequential_stability_warning
+
 
 /**
  * Provide a 'package' with utility functions to be used in the simulation,
@@ -33,7 +37,7 @@
  * 
  * @return:        a structure with pointers to the utility functions
  */
-hn_mode_utils hn_utils_with_mode(update_mode mode);
+hn_mode_utils hn_utils_with_mode(char *update_mode);
 
 
 /**
@@ -58,13 +62,6 @@ size_t sequential_select_unit(size_t max_units, int reset);
  * @return:                    1 if warning is issued, 0 otherwise
  */
 int sequential_stability_warning(int unit_has_flipped, size_t threshold);
-/*
- * I'm not introducing the analogous
- *
- * int random_stability_warning(int unit_has_flipped, int threshold);
- *
- * because I'd code it exactly as sequential_stability_warning().
- */
 
 
 /**

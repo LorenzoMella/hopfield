@@ -13,12 +13,15 @@
 
 CFLAGS = -pedantic -Wall
 CC = clang
+OFILES = hn_parser_test.o ../hn_parser.o
 
-hn_parser_test: hn_parser_test.o hn_parser.o
-	$(CC) $(CFLAGS) -o hn_parser_test hn_parser_test.o hn_parser.o
+hn_parser_test: $(OFILES)
+	$(CC) $(CFLAGS) -o $@ $(OFILES)
 
-hn_parser_test.o: hn_parser_test.c
-hn_parser.o: hn_parser.c
+hn_parser_test.o: hn_parser_test.c ../../debug_log/debug_log.h \
+ ../hn_parser.h ../hn_types.h ../hn_types.h
+hn_parser.o: ../hn_parser.c ../hn_types.h ../hn_parser.h \
+ ../../debug_log/debug_log.h
 
 clean:
-	rm *.o
+	rm -f *.o
