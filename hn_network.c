@@ -24,6 +24,7 @@
 
 /* The following is only needed to visualize activation arrays for debugging */
 #ifdef DEBUG_LOG
+
 void print_arr(spike_T *arr, size_t length)
 {
     for (int i = 0; i < length; ++i) {
@@ -31,9 +32,12 @@ void print_arr(spike_T *arr, size_t length)
     }
     printf("\n");
 }
+
 #else
-#define print_arr(arr, length) /* JUST BLANK */
-#endif /* DEBUG_LOG */
+
+#define print_arr(arr, length)  /* JUST BLANK */
+
+#endif  /* DEBUG_LOG */
 
 
 
@@ -49,7 +53,7 @@ void print_arr(spike_T *arr, size_t length)
  */
 static int hn_update(size_t update_index, hn_network net, size_t max_units)
 {
-    /* Copy current activation for later comparison */
+    /* Back up the current activation for the eventual comparison */
     spike_T current_activation = net.activations[update_index];
     
     /* Compute the local field */
@@ -58,7 +62,7 @@ static int hn_update(size_t update_index, hn_network net, size_t max_units)
         local_field += net.weights[update_index][i] * net.activations[i];
     }
     
-    /* Apply activation function and update unit */
+    /* Apply the activation function and update the unit */
     spike_T new_activation = Sign(local_field - net.threshold);
     net.activations[update_index] = new_activation;
     
@@ -66,7 +70,7 @@ static int hn_update(size_t update_index, hn_network net, size_t max_units)
 }
 
 
-/* Compact structure filler */
+/* Compact-structure filler */
 hn_network hn_network_from_params(double **weights, double threshold,
                                   spike_T *initial_pattern)
 {

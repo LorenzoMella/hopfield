@@ -25,6 +25,7 @@
 
 /**
  * Return the file length in bytes or -1 in case of failure
+ * (one could call 'wc', or use 'stat', but this is more portable)
  */
 static long file_byte_length(FILE *fp)
 {
@@ -34,23 +35,28 @@ static long file_byte_length(FILE *fp)
      * check if successful */
     if (current_position == -1L) {
 	fprintf(stderr, "%s - ftell failed: %s\n", __func__, strerror(errno));
+        errno = 0;
 	return current_position;
     }
     if (fseek(fp, 0L, SEEK_END) != 0) {
 	fprintf(stderr, "%s - fseek failed: %s\n", __func__, strerror(errno));
+        errno = 0;
 	return -1L;
     }
     /* Of course, the end-position is the size! */
     long size = ftell(fp);
     if (size == -1L) {
 	fprintf(stderr, "%s - ftell failed: %s\n", __func__, strerror(errno));
+        errno = 0;
 	return size;
     }
     /* Restore the original position */
     if (fseek(fp, current_position, SEEK_SET) != 0) {
 	fprintf(stderr, "%s - fseek failed: %s\n", __func__, strerror(errno));
+        errno = 0;
 	return -1L;
     }
+    
     return size;
 }
 
@@ -72,6 +78,7 @@ enum io_error_code hn_read_weights(double **weights, char *w_filename,
 
     if (file_byte_length(w_fp) != sizeof (double) * max_units * max_units) {
         fprintf(stderr, "%s - File dimension not matching request\n", __func__);
+        errno = 0;
 	fclose(w_fp);
         return IOFailure;
     }
@@ -81,15 +88,24 @@ enum io_error_code hn_read_weights(double **weights, char *w_filename,
     for (size_t i = 0; i < max_units; ++i) {
         size_t items_read = fread(weights[i], sizeof (double), max_units, w_fp);
 	if (items_read < max_units) {
-	    Logger("%s: error at iteration %zu\n", __func__, i);
-	    if (!feof(w_fp)) { perror(__func__); }
+
+            Logger("%s: error at iteration %zu\n", __func__, i);
+
+            if (!feof(w_fp)) {
+                perror(__func__);
+                errno = 0;
+            }
+            
 	    fclose(w_fp);
-	    return IOFailure;
+
+            return IOFailure;
 	}
     }
     
     fclose(w_fp);
+
     Logger("hn_read_weights got to IOSuccess\n");
+
     return IOSuccess;
 }
 
@@ -103,6 +119,7 @@ enum io_error_code hn_read_next_pattern(spike_T *pattern, char *p_filename,
     if (p_fp == NULL) {
         fprintf(stderr, "%s, line %d: fopen error: %s\n", __FILE__, __LINE__,
 		strerror(errno));
+        errno = 0;
         return IOFailure;
     }
     
@@ -113,14 +130,16 @@ enum io_error_code hn_read_next_pattern(spike_T *pattern, char *p_filename,
     if (fseek(p_fp, pattern_position, SEEK_SET) != 0) {
         fprintf(stderr, "%s, line %d: fseek error: %s\n", __FILE__, __LINE__,
 		strerror(errno));
+        errno = 0;
         return IOFailure;
     }
     
-    /* If the file is over, return failure */
+    /* If no more sequences can be extracted, return failure */
     if (ftell(p_fp) == file_length) {
         fprintf(stderr, "%s, line %d: no more sequences\n", __FILE__, __LINE__);
         return IOFailure;
     }
+
     Logger("ftell after repositioning: %ld; equals "
               "pattern_position? %s\n", ftell(p_fp),
               ftell(p_fp) == pattern_position ? "YES" : "NO");
@@ -130,6 +149,7 @@ enum io_error_code hn_read_next_pattern(spike_T *pattern, char *p_filename,
     if (fread(pattern, sizeof (spike_T), max_units, p_fp) != max_units) {
         fprintf(stderr, "%s, line %d: fread error: %s\n", __FILE__, __LINE__,
 		strerror(errno));
+        errno = 0;
         return IOFailure;
     }
     
@@ -137,7 +157,9 @@ enum io_error_code hn_read_next_pattern(spike_T *pattern, char *p_filename,
     pattern_position += max_units * sizeof (spike_T);
     
     fclose(p_fp);
+    
     Logger("hn_read_next_pattern got to IOSuccess\n");
+
     return IOSuccess;
 }
 
@@ -148,15 +170,21 @@ enum io_error_code hn_save(double *output, char *s_filename,
     FILE *s_fp = fopen(s_filename, "w");
     if (s_fp == NULL) {
 	perror(__func__);
+        errno = 0;
         return IOFailure;
     }
+
     if (fwrite(output, sizeof (double), output_length, s_fp) < output_length) {
         perror(__func__);
+        errno = 0;
 	fclose(s_fp);
         return IOFailure;
     }
+    
     fclose(s_fp);
+    
     Logger("hn_save got to IOSuccess\n");
+
     return IOSuccess;
 }
 
@@ -167,19 +195,23 @@ enum io_error_code hn_save_weights(double **weights, char *w_filename,
     FILE *w_fp = NULL;
     if ((w_fp = fopen(w_filename, "w")) == NULL) {
         perror(__func__);
+        errno = 0;
         return IOFailure;
     }
     
     for (size_t i = 0; i < max_units; ++i) {
         if (fwrite(weights[i], sizeof (double), max_units, w_fp) < max_units) {
 	    perror(__func__);
+            errno = 0;
 	    fclose(w_fp);
             return IOFailure;
         }
     }
     
     fclose(w_fp);
+    
     Logger("hn_save_weights got to IOSuccess\n");
+
     return IOSuccess;
 }
 
@@ -191,15 +223,21 @@ enum io_error_code hn_save_next_pattern(spike_T *pattern, char *p_filename,
     /* We only allow appending for simplicity. */
     if ((p_fp = fopen(p_filename, "a")) == NULL) {
 	perror(__func__);
+        errno = 0;
 	return IOFailure;
     }
+
     if (fwrite(pattern, sizeof (double), max_units, p_fp) < max_units) {
 	perror(__func__);
 	fclose(p_fp);
+        errno = 0;
 	return IOFailure;
     }
+    
     fclose(p_fp);
+
     Logger("hn_save_next_pattern got to IOSuccess\n");
+
     return IOSuccess;
 }
 

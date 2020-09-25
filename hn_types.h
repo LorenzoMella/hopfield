@@ -17,16 +17,19 @@
 #ifndef HN_TYPES_H
 #define HN_TYPES_H
 
+#include <stdlib.h>
+
 
 /**
  * This is the type of neuron activation: to be used only with values +1 and -1.
  * It increases readability, since we are using int's for booleans too 
+ * (I know that this is the epitome of bad practice but it's a standalone case)
  */
 typedef int spike_T;
 
 
 /**
- * Structure to handle the information parsed from the command line arguments
+ * Container for the getopt arguments
  */
 typedef struct hn_options {
     size_t max_units;       /* size of the network */
@@ -41,7 +44,7 @@ typedef struct hn_options {
 
 /**
  * A simple collection of the main parameters that describe the Network.
- * Used to pass these informations more compactly.
+ * Used to pass the information more compactly.
  */ 
 typedef struct hn_network {
     double **weights;       /* matrix of size max_units * max_units */
@@ -76,5 +79,6 @@ typedef struct hn_mode_utils_q {
     int (*stability_warning)(int unit_has_flipped, size_t threshold);
     int (*stability_check)(int *flipped_units, size_t max_units);
 } hn_mode_utils_q;
+
 
 #endif /* HN_TYPES_H */

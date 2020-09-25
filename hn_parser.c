@@ -29,16 +29,6 @@
 
 
 /*
- * Some facts about using getopt():
- * 1 - it stops reading as soon as it encounters an unknown option (returns -1)
- * 2 - if it expects an argument, it simply reads what follows, even if it
- *     starts with - and might therefore be another option token
- * 3 - the allowable codes must be passed to getopt as a single string; see
- *     OptionCodes below. If a code is followed by ':', it means that the
- *     corresponding option expects an argument.
- */
-
-/*
  * Character code meanings:
  * -N   number of units (usually stored in max_units)
  * -M   number of patterns in data-file (usually stored in max_patterns)
@@ -51,8 +41,6 @@
 #define OptionCodes "N:M:w:p:s:m:t:"
 
 
-/* You can enter arguments in any order, but if an invalid option code is met
- * subsequent correct ones are ignored */
 hn_options *hn_retrieve_options(hn_options *opts, int argc, char **argv)
 {
     /* Set defaults */
@@ -62,27 +50,33 @@ hn_options *hn_retrieve_options(hn_options *opts, int argc, char **argv)
 	errno = 0;
 	return NULL;
     }
-    /* Iterate over retrievable options until none is left */
+    
+    /* Iterate over any retrievable options until none is left */
     char code;
     while ((code = getopt(argc, argv, OptionCodes)) != -1) {
+
         Logger("retrieved code = '%c'; argument index = %d; "
                   "argument = \"%s\"\n", code, optind, optarg);
+
         /* Check for invalid options */
         if (code == '?') {
             fprintf(stderr, "%s: Invalid option label: '-%c'\n",
 		    __FILE__, optopt);
             return NULL;
-        /* If argument is valid, update opts pointer
+
+        /* If the argument is valid, update the opts pointer
 	 * and check for correctness */
         } else {
             Logger("current optarg = \"%s\"\n", optarg);
             set_option_argument(opts, code, optarg);
         }
     }
+
+    /* Check paths */
     if (!valid_paths(opts)) {
-	errno = 0;
 	return NULL;
     }
+    
     return opts;
 }
 
@@ -102,11 +96,14 @@ void set_default_options(hn_options *opts)
 size_t nonnegative_size_from_string(char *token)
 {
     long lsize = strtol(token, NULL, 10);
+
     if (lsize < 0) {
 	fprintf(stderr, "%s: Negative number as a size.\n", __func__);
 	lsize = -lsize;
     }
+
     Logger("lsize = %ld\n", lsize);
+
     return (size_t)lsize;
 }
 
@@ -114,11 +111,14 @@ size_t nonnegative_size_from_string(char *token)
 double nonnegative_double_from_string(char *token)
 {
     double dvalue = strtod(token, NULL);
+    
     if (dvalue < 0.) {
 	fprintf(stderr, "%s: Negative threshold value\n", __func__);
 	dvalue = -dvalue;
     }
+    
     Logger("dvalue = %f\n", dvalue);
+
     return dvalue;
 }
 
@@ -126,7 +126,7 @@ double nonnegative_double_from_string(char *token)
 void set_option_argument(hn_options *opts, char code, char *token)
 {
     switch (code) {
-        /* codes 'N and 'M': if string is invalid, strtol returns 0L */
+        /* codes 'N and 'M': if the string is invalid, strtol returns 0L */
     case 'N':
 	Logger("max_units token = \"%s\"\n", token);
 	opts->max_units = nonnegative_size_from_string(token);
@@ -170,18 +170,26 @@ void set_option_argument(hn_options *opts, char code, char *token)
 int valid_paths(hn_options *opts)
 {
     int all_valid = 1;
+    errno = 0;
     if (access(opts->w_filename, O_RDONLY) < 0) {
 	fprintf(stderr, "%s: %s\n", opts->w_filename, strerror(errno));
 	all_valid = 0;
     }
+    
+    errno = 0;
     if (access(opts->p_filename, O_RDONLY) < 0) {
 	fprintf(stderr, "%s: %s\n", opts->p_filename, strerror(errno));
 	all_valid = 0;
     }
+    
+    errno = 0;
     if (access(opts->s_filename, W_OK) < 0 && errno != ENOENT) {
 	fprintf(stderr, "%s: %s\n", opts->s_filename, strerror(errno));
 	all_valid = 0;
     }
+
+    errno = 0;
+                
     return all_valid;
 }
 
