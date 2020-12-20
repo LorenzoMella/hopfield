@@ -30,6 +30,10 @@
  * but having a dedicated name is nice */
 #define random_stability_warning    sequential_stability_warning
 
+enum hn_mode {
+    MODE_SEQUENTIAL,
+    MODE_RANDOM
+};
 
 /**
  * Provide a 'package' with utility functions to be used in the simulation,
@@ -39,7 +43,7 @@
  * 
  * \return:        a structure with pointers to the utility functions
  */
-hn_mode_utils hn_utils_with_mode(char *update_mode);
+hn_mode_utils hn_utils_with_mode(enum hn_mode mode);
 
 
 /**

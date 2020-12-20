@@ -46,31 +46,31 @@
  *      R. Rostamian, "Programming Projects in C", SIAM.
  */
 
-#define MatrixAlloc(mat, max_rows, max_cols)                                            \
-    do {                                                                                \
-        size_t MATRIX_ALLOC_I;                                                          \
-        (mat) = malloc(((max_rows)+1) * sizeof (*(mat)));                               \
-        KillUnless(NULL != (mat));                                                      \
-        (mat)[(max_rows)] = NULL; /* Terminal element */                                \
-        for (MATRIX_ALLOC_I = 0; MATRIX_ALLOC_I < (max_rows); ++MATRIX_ALLOC_I) {       \
-            (mat)[MATRIX_ALLOC_I] = malloc((max_cols) * sizeof (**(mat)));              \
-            KillUnless(NULL != (mat)[MATRIX_ALLOC_I]);                                  \
-        }                                                                               \
+#define MatrixAlloc(mat, max_rows, max_cols)                            \
+    do {                                                                \
+        size_t MATRIX_ALLOC_I;                                          \
+        (mat) = malloc(((max_rows)+1) * sizeof (*(mat)));               \
+        KillUnless(NULL != (mat));                                      \
+        (mat)[(max_rows)] = NULL; /* Terminal element */                \
+        for (MATRIX_ALLOC_I = 0; MATRIX_ALLOC_I < (max_rows); ++MATRIX_ALLOC_I) { \
+            (mat)[MATRIX_ALLOC_I] = malloc((max_cols) * sizeof (**(mat))); \
+            KillUnless(NULL != (mat)[MATRIX_ALLOC_I]);                  \
+        }                                                               \
     } while(0)
 
 
 /* This is in case we want to fill the matrix with zeros. */
-#define MatrixZeros(mat, max_rows, max_cols)                                            \
-    do {                                                                                \
-        size_t MATRIX_ALLOC_I;                                                          \
-        (mat) = malloc(((max_rows) + 1) * sizeof (*(mat)));                             \
-        KillUnless((mat) != NULL);                                                      \
-        (mat)[(max_rows)] = NULL; /* Terminal element */                                \
-        for (MATRIX_ALLOC_I = 0; MATRIX_ALLOC_I < (max_rows); ++MATRIX_ALLOC_I) {       \
-            (mat)[MATRIX_ALLOC_I] = malloc((max_cols) * sizeof (**(mat)));              \
-            KillUnless(NULL != (mat)[MATRIX_ALLOC_I]);                                  \
-            memset((mat)[MATRIX_ALLOC_I], 0, (max_cols) * sizeof(**(mat)));             \
-        }                                                                               \
+#define MatrixZeros(mat, max_rows, max_cols)                            \
+    do {                                                                \
+        size_t MATRIX_ALLOC_I;                                          \
+        (mat) = malloc(((max_rows) + 1) * sizeof (*(mat)));             \
+        KillUnless((mat) != NULL);                                      \
+        (mat)[(max_rows)] = NULL; /* Terminal element */                \
+        for (MATRIX_ALLOC_I = 0; MATRIX_ALLOC_I < (max_rows); ++MATRIX_ALLOC_I) { \
+            (mat)[MATRIX_ALLOC_I] = malloc((max_cols) * sizeof (**(mat))); \
+            KillUnless(NULL != (mat)[MATRIX_ALLOC_I]);                  \
+            memset((mat)[MATRIX_ALLOC_I], 0, (max_cols) * sizeof(**(mat))); \
+        }                                                               \
     } while(0)
 
 

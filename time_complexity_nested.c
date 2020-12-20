@@ -5,15 +5,15 @@
  *         elementary operations and number of       *
  *         unit updates                              *
  *                                                   *
- * PROJECT NAME: Hopfield Network simulation         *
+ * PROJECT NAME: Hopfield Network Simulation         *
  *               (prototype)                         *
  *                                                   *
  * SUPERVISOR: Mark van Rossum                       *
  *                                                   *
  * AUTHOR:  Lorenzo Mella                            *
- * VERSION: 28/07/2016                               *
  *                                                   *
  *****************************************************/
+
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -21,13 +21,13 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include "../debug_log/debug_log.h"
 #include "hn_types.h"
 #include "hn_macro_utils.h"
 #include "hn_data_io.h"
 #include "hn_modes.h"
 #include "hn_network.h"
-/* #define DEBUG_LOG */
-#include "debug_log.h"
+
 
 #define NEAREST_INTEGER(a)  (long)floor((a) + 0.5)
 
@@ -46,7 +46,7 @@ enum self_coupling {KEEP_SELF_COUPLING=0, REMOVE_SELF_COUPLING=1};
 
 /* Little command-line parser */
 void command_line_parser(int argc, char **argv, int *max_trials,
-                         int trials_per_param; size_t *max_plot_value,
+                         int *trials_per_param, size_t *max_plot_value,
                          int *max_plot_points, double *pattern_unit_ratio,
                          double *coding_level);
 
@@ -223,15 +223,15 @@ int main(int argc, char **argv)
     /* Save data (dplot_points, avg_elapsed_secs and avg_timesteps) on files */
     printf("Saving files in ./%s\n", SAVE_FOLDER);
     printf("Saving list of numbers of units on file: %s\n", savefile_points);
-    exit_on_exception(IO_SUCCESS ==
+    exit_on_exception(IOSuccess ==
                       hn_save(dplot_points, savefile_points, max_plot_points));
     printf("...done!\n");
     printf("Saving times (in seconds) on file: %s\n", savefile_secs);
-    exit_on_exception(IO_SUCCESS ==
+    exit_on_exception(IOSuccess ==
                      hn_save(avg_elapsed_secs, savefile_secs, max_plot_points));
     printf("...done!\n");
     printf("Saving numbers of updates on file: %s\n", savefile_steps);
-    exit_on_exception(IO_SUCCESS ==
+    exit_on_exception(IOSuccess ==
                       hn_save(avg_timesteps, savefile_steps, max_plot_points));
     printf("...done!\n");
     
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
 
 
 void command_line_parser(int argc, char **argv, int *max_trials,
-                         int trials_per_param; size_t *max_plot_value,
+                         int *trials_per_param, size_t *max_plot_value,
                          int *max_plot_points, double *pattern_unit_ratio,
                          double *coding_level)
 {

@@ -22,8 +22,7 @@
 
 /**
  * This is the type of neuron activation: to be used only with values +1 and -1.
- * It increases readability, since we are using int's for booleans too 
- * (I know that this is the epitome of bad practice but it's a standalone case)
+ * Maybe bad practice, but spikes may change representation in later versions.
  */
 typedef int spike_T;
 
@@ -32,6 +31,7 @@ typedef int spike_T;
  * Container for the getopt arguments
  */
 typedef struct hn_options {
+
     size_t max_units;       /* size of the network */
     size_t max_patterns;    /* number of patterns in datafile */
     char *w_filename;       /* name of datafile with network weights */
@@ -39,6 +39,7 @@ typedef struct hn_options {
     char *s_filename;       /* output savefile name */
     char *mode;             /* update mode */
     double threshold;       /* the activation function threshold */
+
 } hn_options;
 
 
@@ -47,9 +48,11 @@ typedef struct hn_options {
  * Used to pass the information more compactly.
  */ 
 typedef struct hn_network {
+
     double **weights;       /* matrix of size max_units * max_units */
     spike_T *activations;   /* vector of length max_units */
     double threshold;       /* common threshold to all the units */
+
 } hn_network;
 
 
@@ -59,14 +62,18 @@ typedef struct hn_network {
  * for update.
  */
 typedef struct hn_mode_utils {
+
     /* Generates the next index of the next unit to update. It could have
      * an internal state that can be reset with the boolean reset */
     size_t (*select_unit)(size_t max_units, int reset);
+
     /* Signals whether we should test for convergence, that is,
      * use stability_check() */
     int (*stability_warning)(int unit_has_flipped, size_t threshold);
+
     /* Determines whether the network has converged */
     int (*stability_check)(hn_network, size_t max_units);
+
 } hn_mode_utils;
 
 
@@ -75,9 +82,13 @@ typedef struct hn_mode_utils {
  * with the quicker hn_test_pattern_q().
 */
 typedef struct hn_mode_utils_q {
+
     size_t (*select_unit)(size_t max_units, int reset);
+
     int (*stability_warning)(int unit_has_flipped, size_t threshold);
+
     int (*stability_check)(int *flipped_units, size_t max_units);
+
 } hn_mode_utils_q;
 
 

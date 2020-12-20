@@ -21,13 +21,14 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include "../debug_log/debug_log.h"
 #include "hn_types.h"
 #include "hn_macro_utils.h"
 #include "hn_data_io.h"
 #include "hn_modes.h"
 #include "hn_network.h"
-/* #define DEBUG_LOG */
-#include "debug_log.h"
+
+
 
 #define NearestInteger(a)  (long)floor((a) + 0.5)
 
@@ -85,7 +86,7 @@ int main(int argc, char **argv)
     hn_network net;
     double **weights;
     spike_T **patterns;
-    hn_mode_utils utils = hn_utils_with_mode(RANDOM);
+    hn_mode_utils utils = hn_utils_with_mode(MODE_RANDOM);
     
     /* Seed if DEBUG_LOG is not toggled */
     #ifndef DEBUG_LOG
@@ -109,9 +110,9 @@ int main(int argc, char **argv)
     /* Now that we have the dimensions we can allocate time recording
      * data-structures. These must also be initialised at 0. */
     avg_elapsed_secs = malloc(max_plot_points * sizeof (double));
-    exit_on_exception(avg_elapsed_secs != NULL);
+    KillUnless(avg_elapsed_secs != NULL);
     avg_timesteps = malloc(max_plot_points * sizeof (double));
-    exit_on_exception(avg_timesteps != NULL);
+    KillUnless(avg_timesteps != NULL);
     for (i = 0; i < max_plot_points; ++i) {
         avg_elapsed_secs[i] = 0.;
         avg_timesteps[i] = 0.;
@@ -120,10 +121,10 @@ int main(int argc, char **argv)
     /* Design the unique log_plot scale with size_t unit values
      * min_units <= num_units <= max_units and max_plot_points elements */
     plot_points = malloc(max_plot_points * sizeof (*plot_points));
-    exit_on_exception(plot_points != NULL);
+    KillUnless(plot_points != NULL);
     /* (Also create copies that can be easily saved with hn_save) */
     dplot_points = malloc(max_plot_points * sizeof (*plot_points));
-    exit_on_exception(dplot_points != NULL);
+    KillUnless(dplot_points != NULL);
     
     ratio = pow(max_plot_value/(double)min_plot_value, 1./(max_plot_points-1));
     
@@ -132,7 +133,7 @@ int main(int argc, char **argv)
     for (i = 1; i < max_plot_points; ++i) {
         /* next plot point = previous * ratio (rounded to nearest integer) */
         plot_points[i] = (size_t)NearestInteger(plot_points[i-1] * ratio);
-        debug_log("Nearest integer to %f is %lu\n", plot_points[i-1] * ratio,
+        Logger("Nearest integer to %f is %lu\n", plot_points[i-1] * ratio,
                   plot_points[i]);
         dplot_points[i] = (double)plot_points[i];
     }
@@ -144,11 +145,11 @@ int main(int argc, char **argv)
         size_t max_units = plot_points[i];
         size_t max_patterns =
             (size_t)NearestInteger(pattern_unit_ratio * max_units);
-        debug_log("max_patterns = %lu\n", max_patterns);
+        Logger("max_patterns = %lu\n", max_patterns);
         assert(max_patterns > 0 && max_patterns < max_units);
         
-        hn_matrix_alloc(weights, max_units, max_units);
-        hn_matrix_alloc(patterns, max_patterns, max_units);
+        MatrixAlloc(weights, max_units, max_units);
+        MatrixAlloc(patterns, max_patterns, max_units);
         
         printf("Testing networks with %lu units\n", max_units);
         
@@ -159,7 +160,7 @@ int main(int argc, char **argv)
             
             /* Create an initial pattern at random */
             random_initial_state = malloc(max_units * sizeof (spike_T));
-            exit_on_exception(random_initial_state != NULL);
+            KillUnless(random_initial_state != NULL);
             hn_fill_rand_pattern(random_initial_state, coding_level, max_units);
             
             /* Create a number of patterns max_patterns (can be constrained
@@ -199,8 +200,8 @@ int main(int argc, char **argv)
                avg_elapsed_secs[i], avg_timesteps[i]);
         
         /* Main loop cleanup */
-        hn_matrix_free(patterns);
-        hn_matrix_free(weights);
+        MatrixFree(patterns);
+        MatrixFree(weights);
     }
     
     printf("All numbers of units have been tested\n\n");
@@ -216,16 +217,13 @@ int main(int argc, char **argv)
     /* Save data (dplot_points, avg_elapsed_secs and avg_timesteps) on files */
     printf("Saving files in ./%s\n", SAVE_FOLDER);
     printf("Saving list of numbers of units on file: %s\n", savefile_points);
-    exit_on_exception(IO_SUCCESS ==
-                      hn_save(dplot_points, savefile_points, max_plot_points));
+    KillUnless(IOSuccess == hn_save(dplot_points, savefile_points, max_plot_points));
     printf("...done!\n");
     printf("Saving times (in seconds) on file: %s\n", savefile_secs);
-    exit_on_exception(IO_SUCCESS ==
-                     hn_save(avg_elapsed_secs, savefile_secs, max_plot_points));
+    KillUnless(IOSuccess == hn_save(avg_elapsed_secs, savefile_secs, max_plot_points));
     printf("...done!\n");
     printf("Saving numbers of updates on file: %s\n", savefile_steps);
-    exit_on_exception(IO_SUCCESS ==
-                      hn_save(avg_timesteps, savefile_steps, max_plot_points));
+    KillUnless(IOSuccess == hn_save(avg_timesteps, savefile_steps, max_plot_points));
     printf("...done!\n");
     
     /* Cleanup */

@@ -16,32 +16,28 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "../debug_log/debug_log.h"
 #include "hn_types.h"
 #include "hn_macro_utils.h"
 #include "hn_modes.h"
-#include "../debug_log/debug_log.h"
 
 
-hn_mode_utils hn_utils_with_mode(char *update_mode)
+hn_mode_utils hn_utils_with_mode(enum hn_mode update_mode)
 {
     hn_mode_utils utils;
     
-    if (StringsAreEqual(update_mode, "Sequential")) {
+    if (update_mode == MODE_SEQUENTIAL) {
 
 	utils.select_unit = &sequential_select_unit;
 	utils.stability_warning = &sequential_stability_warning;
 	utils.stability_check = &sequential_stability_check;
         
-    } else {
-
-        if (!StringsAreEqual(update_mode, "Random")) {
-	    fprintf(stderr, "%s: Unknown update mode %s."
-		    "Defaulting to Random\n", __func__, update_mode);
-	}
+    } else {  /* the only other option: MODE_RANDOM */
         
-	utils.select_unit = &random_select_unit;
+        utils.select_unit = &random_select_unit;
 	utils.stability_warning = &sequential_stability_warning;
 	utils.stability_check = &random_stability_check;
+        
     }
     
     return utils;
@@ -85,17 +81,17 @@ int sequential_stability_warning(int unit_has_flipped, size_t threshold)
 
 int sequential_stability_check(hn_network net, size_t max_units)
 {
-    size_t i, j;
-    double local_field;
+    size_t i;
     
     for (i = 0; i < max_units; ++i) {
+
         /* Compute the local field */
-        local_field = 0.;
-        for (j = 0; j < max_units; ++j) {
+        double local_field = 0.;
+        for (size_t j = 0; j < max_units; ++j) {
             local_field += net.weights[i][j] * net.activations[j];
         }
         
-        /* Check if the unit is stable, i.e., activation doesn't change */
+        /* Check if the unit is stable, i.e., the activation doesn't change */
         if (Sign(local_field - net.threshold) != net.activations[i]) {
             return 0;
         }
@@ -117,6 +113,7 @@ size_t random_select_unit(size_t max_units, int reset)
 int random_stability_check(hn_network net, size_t max_units)
 {
     size_t i;    
+
     for (i = 0; i < max_units; ++i) {
 
         /* Compute the local field */

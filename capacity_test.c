@@ -1,7 +1,7 @@
 /*****************************************************
  * C FILE (main): capacity_test.c                    *
  * MODULE: Experimental capacity analysis            *
- *         with varying coding levels (proportion    *
+ *         with various coding levels (proportion    *
  *         of selective neurons for patterns         *
  *         and activation function threshold         *
  *                                                   *
@@ -11,7 +11,6 @@
  * SUPERVISOR: Mark van Rossum                       *
  *                                                   *
  * AUTHOR:  Lorenzo Mella                            *
- * VERSION: 31/07/2016                               *
  *                                                   *
  *****************************************************/
 
@@ -19,12 +18,13 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "../debug_log/debug_log.h"
 #include "hn_types.h"
 #include "hn_data_io.h"
 #include "hn_macro_utils.h"
 #include "hn_modes.h"
 #include "hn_network.h"
-#include "debug_log.h"
+
 
 
 /* Application defaults are set here */
@@ -65,9 +65,9 @@ int main(int argc, char **argv)
     char s_filename_var[100];
     
     /* Seed if DEBUG_LOG is not toggled */
-    #ifndef DEBUG_LOG
+#   ifndef DEBUG_LOG
     srand(time(NULL));
-    #endif
+#   endif
     
     command_line_parser(argc, argv, &max_trials, &max_units, &max_patterns,
                         &threshold, &coding_level);
@@ -108,11 +108,11 @@ int main(int argc, char **argv)
         /* Timing each trial... */
         clock_start = clock();
         
-        printf("trial %d start\n", trial+1);  /* A sort of progress bar */
+        printf("trial %zu start\n", trial + 1);  /* A sort of progress bar */
         
         /* Allocate the space for a sequence of patterns and fill
          * patterns with random sequences at the specified coding level */
-        /* THIS DOESN'T HOWEVER CHECK FOR IDENTICAL MEMORIES!! */
+        /* THIS DOESN'T CHECK HOWEVER FOR IDENTICAL MEMORIES!! */
         Logger("Allocating memory for patterns...\n");
         MatrixAlloc(patterns, max_patterns, max_units);
         Logger("... done!\n");
@@ -129,7 +129,7 @@ int main(int argc, char **argv)
         for (size_t i = 0; i < max_patterns; ++i) {
             size_t overlaps;
             hn_network net;
-            hn_mode_utils utils = hn_utils_with_mode("Random");
+            hn_mode_utils utils = hn_utils_with_mode(MODE_RANDOM);
             
             /* Select a pattern among the first i+1 to test at random
              * and make a copy to compare later */
@@ -168,8 +168,8 @@ int main(int argc, char **argv)
         secs_diff = (double)(clock_end - clock_start) / CLOCKS_PER_SEC;
         total_elapsed_secs += secs_diff;
         
-        printf("trial %d done. Elapsed CPU time: %.2f sec\n",
-               trial+1, secs_diff);
+        printf("trial %zu done. Elapsed CPU time: %.2f sec\n",
+               trial + 1, secs_diff);
     }
     
     printf("\nMain loop completed! Elapsed CPU time: %.2f sec\n\n",
