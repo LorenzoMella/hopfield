@@ -17,7 +17,7 @@
 #ifndef HN_MACRO_UTILS_H
 #define HN_MACRO_UTILS_H
 
-#include "../debug_log/debug_log.h"
+#include "debug_log.h"
 
 
 /* Intuitive restatement of !strcmp that yields a boolean */

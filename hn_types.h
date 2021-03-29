@@ -28,6 +28,15 @@ typedef int spike_T;
 
 
 /**
+ * Update mode: the way that a neuron is selected for update at each iteration.
+ */
+enum hn_mode {
+    MODE_SEQUENTIAL,            /* Th next unit according to index order is selected */
+    MODE_RANDOM                 /* A random unit is selected ("with replacement") */
+};
+
+
+/**
  * Container for the getopt arguments
  */
 typedef struct hn_options {
@@ -37,7 +46,7 @@ typedef struct hn_options {
     char *w_filename;       /* name of datafile with network weights */
     char *p_filename;       /* name of datafile with initial sequences */
     char *s_filename;       /* output savefile name */
-    char *mode;             /* update mode */
+    enum hn_mode mode;      /* update mode */
     double threshold;       /* the activation function threshold */
 
 } hn_options;
@@ -58,7 +67,7 @@ typedef struct hn_network {
 
 /**
  * Collection of function pointers to utility functions to be used by
- * hn_test_pattern() and take into account how the next unit is to be selected
+ * hn_test_pattern and take into account how the next unit is to be selected
  * for update.
  */
 typedef struct hn_mode_utils {
@@ -79,7 +88,7 @@ typedef struct hn_mode_utils {
 
 /**
  * Same as above, but with slightly different signatures: to be used
- * with the quicker hn_test_pattern_q().
+ * with the quicker hn_test_pattern_q.
 */
 typedef struct hn_mode_utils_q {
 

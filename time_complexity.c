@@ -15,22 +15,24 @@
  *                                                   *
  *****************************************************/
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include <math.h>
-#include <time.h>
-#include "../debug_log/debug_log.h"
+
+#include "debug_log.h"
 #include "hn_types.h"
 #include "hn_macro_utils.h"
 #include "hn_data_io.h"
 #include "hn_modes.h"
 #include "hn_network.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
+#include <math.h>
+#include <time.h>
 
 
 #define NearestInteger(a)  (long)floor((a) + 0.5)
+
 
 /* Application defaults are set here */
 #define MAX_TRIALS 40
@@ -40,7 +42,6 @@
 #define PATTERN_UNIT_RATIO 0.05
 #define CODING_LEVEL 0.5
 
-#define SAVE_FOLDER "time_complexity_plot"
 
 enum self_coupling {KEEP_SELF_COUPLING=0, REMOVE_SELF_COUPLING=1};
 
@@ -75,9 +76,9 @@ int main(int argc, char **argv)
     double *avg_timesteps;
     
     /* Save-file names */
-    char savefile_points[100];
-    char savefile_secs[100];
-    char savefile_steps[100];
+    char savefile_points[MAX_CHARS];
+    char savefile_secs[MAX_CHARS];
+    char savefile_steps[MAX_CHARS];
     
     /* Data structures to be filled at random etc. */
     size_t *plot_points;    /* Points in log-scale between min and max_units */
@@ -207,24 +208,32 @@ int main(int argc, char **argv)
     printf("All numbers of units have been tested\n\n");
     
     /* Create filenames with meaningful parameter information */
-    sprintf(savefile_points, "%s/tc_plot_points_%d_%.3f.bin", SAVE_FOLDER,
-            max_trials, pattern_unit_ratio);
-    sprintf(savefile_secs, "%s/tc_plot_secs_%d_%.3f.bin", SAVE_FOLDER,
-            max_trials, pattern_unit_ratio);
-    sprintf(savefile_steps, "%s/tc_plot_steps_%d_%.3f.bin", SAVE_FOLDER,
-            max_trials, pattern_unit_ratio);
+    snprintf(savefile_points, MAX_CHARS, "tc_plot_points_%d_%.3f.bin", max_trials,
+             pattern_unit_ratio);
+    snprintf(savefile_secs, MAX_CHARS, "tc_plot_secs_%d_%.3f.bin", max_trials,
+             pattern_unit_ratio);
+    snprintf(savefile_steps, MAX_CHARS, "tc_plot_steps_%d_%.3f.bin", max_trials,
+             pattern_unit_ratio);
 
     /* Save data (dplot_points, avg_elapsed_secs and avg_timesteps) on files */
-    printf("Saving files in ./%s\n", SAVE_FOLDER);
-    printf("Saving list of numbers of units on file: %s\n", savefile_points);
-    KillUnless(IOSuccess == hn_save(dplot_points, savefile_points, max_plot_points));
-    printf("...done!\n");
-    printf("Saving times (in seconds) on file: %s\n", savefile_secs);
-    KillUnless(IOSuccess == hn_save(avg_elapsed_secs, savefile_secs, max_plot_points));
-    printf("...done!\n");
-    printf("Saving numbers of updates on file: %s\n", savefile_steps);
-    KillUnless(IOSuccess == hn_save(avg_timesteps, savefile_steps, max_plot_points));
-    printf("...done!\n");
+    size_t bytes_written;
+
+    printf("Saving files in the current folder\n");
+
+    printf("Saving list of numbers of units on file: \'%s\'...\n", savefile_points);
+    KillUnless(IOSuccess == hn_save(dplot_points, savefile_points, max_plot_points,
+                                    &bytes_written));
+    printf("done! (size: %lu bytes)\n\n", bytes_written);
+
+    printf("Saving times (in seconds) on file: \'%s\'...\n", savefile_secs);
+    KillUnless(IOSuccess == hn_save(avg_elapsed_secs, savefile_secs, max_plot_points,
+                                    &bytes_written));
+    printf("done! (size: %lu bytes)\n\n", bytes_written);
+
+    printf("Saving numbers of updates on file: \'%s\'...\n", savefile_steps);
+    KillUnless(IOSuccess == hn_save(avg_timesteps, savefile_steps, max_plot_points,
+                                    &bytes_written));
+    printf("done! (size: %lu bytes)\n\n", bytes_written);
     
     /* Cleanup */
     free(avg_timesteps);

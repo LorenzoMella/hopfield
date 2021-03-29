@@ -13,14 +13,14 @@
  *****************************************************/
 
 
+#include "debug_log.h"
+#include "hn_data_io.h"
+#include "hn_types.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "../debug_log/debug_log.h"
-#include "hn_data_io.h"
-#include "hn_types.h"
 
 
 /**
@@ -165,7 +165,7 @@ enum io_error_code hn_read_next_pattern(spike_T *pattern, char *p_filename,
 
 
 enum io_error_code hn_save(double *output, char *s_filename,
-			   size_t output_length)
+			   size_t output_length, size_t *bytes_written)
 {
     FILE *s_fp = fopen(s_filename, "w");
     if (s_fp == NULL) {
@@ -174,7 +174,9 @@ enum io_error_code hn_save(double *output, char *s_filename,
         return IOFailure;
     }
 
-    if (fwrite(output, sizeof (double), output_length, s_fp) < output_length) {
+    size_t num_copied = fwrite(output, sizeof(*output), output_length, s_fp);
+    
+    if (num_copied < output_length) {
         perror(__func__);
         errno = 0;
 	fclose(s_fp);
@@ -182,6 +184,8 @@ enum io_error_code hn_save(double *output, char *s_filename,
     }
     
     fclose(s_fp);
+
+    *bytes_written = num_copied * sizeof(*output);
     
     Logger("hn_save got to IOSuccess\n");
 
@@ -200,7 +204,7 @@ enum io_error_code hn_save_weights(double **weights, char *w_filename,
     }
     
     for (size_t i = 0; i < max_units; ++i) {
-        if (fwrite(weights[i], sizeof (double), max_units, w_fp) < max_units) {
+        if (fwrite(weights[i], sizeof(**weights), max_units, w_fp) < max_units) {
 	    perror(__func__);
             errno = 0;
 	    fclose(w_fp);
@@ -227,7 +231,7 @@ enum io_error_code hn_save_next_pattern(spike_T *pattern, char *p_filename,
 	return IOFailure;
     }
 
-    if (fwrite(pattern, sizeof (double), max_units, p_fp) < max_units) {
+    if (fwrite(pattern, sizeof(*pattern), max_units, p_fp) < max_units) {
 	perror(__func__);
 	fclose(p_fp);
         errno = 0;

@@ -11,6 +11,11 @@
  *                                                   *
  *****************************************************/
 
+#include "debug_log.h"
+#include "hn_parser.h"
+#include "hn_types.h"
+#include "hn_macro_utils.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -18,13 +23,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "hn_parser.h"
-#include "hn_types.h"
-#include "hn_macro_utils.h"
-#include "../debug_log/debug_log.h"
 
 #ifndef PATH_MAX
-#define PATH_MAX 4096
+#  define PATH_MAX 4096
 #endif
 
 
@@ -85,10 +86,10 @@ void set_default_options(hn_options *opts)
 {
     opts->max_units = 500;
     opts->max_patterns = 10;
-    opts->w_filename = strdup("weights.bin");
-    opts->p_filename = strdup("patterns.bin");
+    opts->w_filename = strdup("example_data_files/weights500.bin");
+    opts->p_filename = strdup("example_data_files/patterns500.bin");
     opts->s_filename = strdup("results.bin");
-    opts->mode = strdup("Sequential");
+    opts->mode = MODE_SEQUENTIAL;
     opts->threshold = 0.;
 }
 
@@ -157,7 +158,15 @@ void set_option_argument(hn_options *opts, char code, char *token)
 	Logger("Path = \"%s\"\n", opts->s_filename);
 	break;
     case 'm':
-	opts->mode = token;
+        if (strcmp(token, "MODE_SEQUENTIAL") == 0) {
+            opts->mode = MODE_SEQUENTIAL;
+        } else {
+            opts->mode = MODE_RANDOM;
+            if (strcmp(token, "MODE_RANDOM") == 0) {
+                PrintWarning("Unknown update mode \"%s\". "
+                             "Defaulting to MODE_RANDOM\n", token);
+            }
+        }
 	break;
     case 't':
 	Logger("threshold token = \"%s\"\n", token);
@@ -196,7 +205,6 @@ int valid_paths(hn_options *opts)
 
 void hn_free_options(hn_options *opts)
 {
-    free(opts->mode);
     free(opts->w_filename);
     free(opts->p_filename);
     free(opts->s_filename);

@@ -13,13 +13,13 @@
  *****************************************************/
 
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "../debug_log/debug_log.h"
+#include "debug_log.h"
 #include "hn_macro_utils.h"
 #include "hn_network.h"
 #include "hn_types.h"
+
+#include <stdio.h>
+#include <stdlib.h>
 
 
 /* The following is only needed to visualize activation arrays for debugging */

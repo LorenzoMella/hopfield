@@ -10,16 +10,17 @@
  * SUPERVISOR: Mark van Rossum                       *
  *                                                   *
  * AUTHOR:  Lorenzo Mella                            *
- * VERSION: 31/07/2016                               *
  *                                                   *
  *****************************************************/
 
-#include <stdlib.h>
-#include <stdio.h>
-#include "../debug_log/debug_log.h"
+
+#include "debug_log.h"
 #include "hn_types.h"
 #include "hn_macro_utils.h"
 #include "hn_modes.h"
+
+#include <stdlib.h>
+#include <stdio.h>
 
 
 hn_mode_utils hn_utils_with_mode(enum hn_mode update_mode)
@@ -47,6 +48,7 @@ hn_mode_utils hn_utils_with_mode(enum hn_mode update_mode)
 size_t sequential_select_unit(size_t max_units, int reset)
 {
     static size_t counter = 0;
+
     if (reset) {
         return (counter = 0);
     } else {
@@ -97,7 +99,7 @@ int sequential_stability_check(hn_network net, size_t max_units)
         }
     }
     
-    Logger("Last verified index checked (Sequential mode): %lu\n", i);
+    Logger("Last verified index (MODE_SEQUENTIAL): %lu\n", i);
     
     return 1;
 }
@@ -128,7 +130,7 @@ int random_stability_check(hn_network net, size_t max_units)
         }
     }
     
-    Logger("Last verified index checked (RANDOM mode): %lu\n", i);
+    Logger("Last verified index (MODE_RANDOM): %lu\n", i);
 
     return 1;
 }

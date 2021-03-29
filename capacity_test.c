@@ -14,17 +14,17 @@
  *                                                   *
  *****************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
 
-#include "../debug_log/debug_log.h"
+#include "debug_log.h"
 #include "hn_types.h"
 #include "hn_data_io.h"
 #include "hn_macro_utils.h"
 #include "hn_modes.h"
 #include "hn_network.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 
 /* Application defaults are set here */
@@ -184,21 +184,23 @@ int main(int argc, char **argv)
     }
     
     /* Save average overlaps on a file */
-    sprintf(s_filename, "avg_overlaps/avg_overlaps_%d_%lu_%lu_th%g_f%1.g.bin",
+    snprintf(s_filename, MAX_CHARS, "avg_overlaps_%d_%lu_%lu_th%g_f%1.g.bin",
             max_trials, max_units, max_patterns, threshold, coding_level);
     
-    sprintf(s_filename_var, "avg_overlaps/"
-            "var_overlaps_%d_%lu_%lu_th%g_f%1.g.bin",
+    snprintf(s_filename_var, MAX_CHARS, "var_overlaps_%d_%lu_%lu_th%g_f%1.g.bin",
             max_trials, max_units, max_patterns, threshold, coding_level);
     
+    size_t bytes_written;
     
-    printf("Saving average overlap counts on file... ");
-    KillUnless(IOFailure != hn_save(avg_overlaps, s_filename, max_patterns));
-    printf("done!\n\n");
+    printf("Saving average overlap counts on file \'%s\'... ", s_filename);
+    KillUnless(IOFailure != hn_save(avg_overlaps, s_filename, max_patterns,
+                                    &bytes_written));
+    printf("done! (size: %lu bytes)\n\n", bytes_written);
     
-    printf("Saving variance of overlap counts on file... ");
-    KillUnless(IOFailure != hn_save(avg_sq_overlaps, s_filename_var, max_patterns));
-    printf("done!\n\n");
+    printf("Saving variance of overlap counts on file \'%s\'... ", s_filename_var);
+    KillUnless(IOFailure != hn_save(avg_sq_overlaps, s_filename_var, max_patterns,
+                                    &bytes_written));
+    printf("done! (size: %lu bytes)\n\n", bytes_written);
     
     exit(EXIT_SUCCESS);
 }

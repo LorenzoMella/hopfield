@@ -9,15 +9,5 @@ Author: Lorenzo Mella
 Supervisor: Mark van Rossum
 Institution: University of Edinburgh
 
-Notes:
-
-It requires the debug_log.h header.
-
-Sub-folders containing simple tests:
-
-hn_network_test
-hn_parser_test
-hn_data_io_test
-hn_modes_test
 
 UNLICENSED CODE. DISPLAYED SOLELY AS A PAST PROGRAMMING EFFORT.
