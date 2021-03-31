@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 
 
 #ifndef PATH_MAX
@@ -29,17 +30,31 @@
 #endif
 
 
-/*
- * Character code meanings:
- * -N   number of units (usually stored in max_units)
- * -M   number of patterns in data-file (usually stored in max_patterns)
- * -w   name of binary file containing the weights matrix
- * -p   name of binary file containing the list of patterns
- * -s   name of a savefile for a list of doubles
- * -m   string representing the update mode
- * -t   the threshold of the activation function
- */
-#define OptionCodes "N:M:w:p:s:m:t:"
+#define OptionCodes "N:M:w:p:s:m:t:hv"
+
+
+char *g_help_string = "\nUsage:\n"
+    "hn_basic_simulation [OPTIONS+ARGS]\n\n"
+    "Hopfield Network Basic Simulation.\n"
+    "Omitted arguments imply the default values within parentheses.\n\n"
+    "-N NUM_UNITS         specify the number of units (500)\n"
+    "-M NUM_PATTERNS      specify the number of patterns in data-file (10)\n"
+    "-w W_FILENAME        specify the name of the  binary file containing the weights matrix\n(./example_data_files/weights500.bin)\n"
+    "-p P_FILENAME        specify the name of the binary file containing the list of patterns\n(./example_data_files/patterns500.bin)\n"
+    "-s S_FILENAME        specify the name of the save file for a list of doubles\n(results.bin)\n"
+    "-m MODE_NAME         string representing the update mode: accepts either MODE_SEQUENTIAL or MODE_RANDOM\n(MODE_SEQUENTIAL)\n"
+    "-t THRESHOLD         set the threshold of the activation function (0.0)\n"
+    "-h, --help           this brief usage explanation\n"
+    "-v, --version        displays version;\n";
+
+
+char *g_version_info = "\nHopfield Network Basic Simulation - Version 1.0\n";
+
+
+struct option g_longopts[] = {
+    { "help", no_argument, NULL, 'h' },
+    { "version", no_argument, NULL, 'v' },
+    {0} };
 
 
 hn_options *hn_retrieve_options(hn_options *opts, int argc, char **argv)
@@ -53,11 +68,12 @@ hn_options *hn_retrieve_options(hn_options *opts, int argc, char **argv)
     }
     
     /* Iterate over any retrievable options until none is left */
-    char code;
-    while ((code = getopt(argc, argv, OptionCodes)) != -1) {
+    int code = getopt_long(argc, argv, OptionCodes, g_longopts, NULL);
+
+    while (code != -1) {
 
         Logger("retrieved code = '%c'; argument index = %d; "
-                  "argument = \"%s\"\n", code, optind, optarg);
+               "argument = \"%s\"\n", code, optind, optarg ? optarg : "(no_arg)");
 
         /* Check for invalid options */
         if (code == '?') {
@@ -127,6 +143,13 @@ double nonnegative_double_from_string(char *token)
 void set_option_argument(hn_options *opts, char code, char *token)
 {
     switch (code) {
+    default:
+    case 'h':
+        printf("%s\n", g_help_string);
+        exit(EXIT_SUCCESS);
+    case 'v':
+        printf("%s\n", g_version_info);
+        exit(EXIT_SUCCESS);
         /* codes 'N and 'M': if the string is invalid, strtol returns 0L */
     case 'N':
 	Logger("max_units token = \"%s\"\n", token);
